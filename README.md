@@ -21,5 +21,5 @@ Ensure `dig`, `whois`, and `curl` are installed on your system.
 Provide the domain as a single argument:
 
 ```bash
-./domain_inspector.sh example.com
+./diligence.sh example.com
 ```
