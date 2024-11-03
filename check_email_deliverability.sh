@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GOOGLE_SAFE_BROWSING_API_KEY=""
+GOOGLE_SAFE_BROWSING_API_KEY="AIzaSyDwQtctMKUxmJoQItMO5OCKNY0a8_2p0V8"
 
 missing_tools=()
 for tool in dig whois curl jq openssl; do
@@ -66,7 +66,7 @@ check_spf() {
                         summary+="🛑 SPF Record: Not found\n"
                     else
                         echo "SPF record found on root domain: $spf_record"
-                        summary+="✅ SPF Record: Found on root domain\n"
+                        summary+="⚠️  SPF Record: Found on root domain\n"
                     fi
                 fi
             else
@@ -118,7 +118,7 @@ check_dmarc() {
                             echo "Could not determine DMARC policy from the record."
                             summary+="🛑 DMARC Policy: Not found or unrecognized\n"
                         fi
-                        summary+="✅ DMARC Record: Found on root domain\n"
+                        summary+="⚠️  DMARC Record: Found on root domain\n"
                     fi
                 fi
             else
@@ -297,10 +297,8 @@ check_dnssec() {
     dnskey=$(dig DNSKEY "$domain" +short)
     if [ -z "$dnskey" ]; then
         echo "DNSSEC: not enabled for $domain."
-        summary+="🛑 DNSSEC: Not enabled\n"
     else
         echo "DNSSEC is enabled for $domain."
-        summary+="✅ DNSSEC: Enabled\n"
     fi
     space
 }
@@ -345,7 +343,6 @@ check_mta_sts() {
     mta_sts_record=$(dig +short "_mta-sts.$domain" TXT)
     if [ -z "$mta_sts_record" ]; then
         echo "MTA-STS record not found."
-        summary+="🛑 MTA-STS Record: Not found\n"
     else
         echo "MTA-STS record found: $mta_sts_record"
         summary+="MTA-STS Record: Found\n"
@@ -353,10 +350,8 @@ check_mta_sts() {
         policy_response=$(curl -s -o /dev/null -w "%{http_code}" "$policy_url")
         if [ "$policy_response" -eq 200 ]; then
             echo "MTA-STS policy file accessible at $policy_url"
-            summary+="✅ MTA-STS Policy File: Accessible\n"
         else
             echo "MTA-STS policy file is not accessible at $policy_url"
-            summary+="🛑 MTA-STS Policy File: Not accessible\n"
         fi
     fi
     space
@@ -367,10 +362,8 @@ check_tls_rpt() {
     tls_rpt_record=$(dig +short "_smtp._tls.$domain" TXT)
     if [ -z "$tls_rpt_record" ]; then
         echo "TLS-RPT record: Not found."
-        summary+="🛑 TLS-RPT Record: Not found\n"
     else
         echo "TLS-RPT record found: $tls_rpt_record"
-        summary+="✅ TLS-RPT Record: Found\n"
     fi
     space
 }
@@ -380,10 +373,8 @@ check_bimi() {
     bimi_record=$(dig +short "default._bimi.$domain" TXT)
     if [ -z "$bimi_record" ]; then
         echo "BIMI record not found."
-        summary+="🛑 BIMI Record: Not found\n"
     else
         echo "BIMI record found: $bimi_record"
-        summary+="✅ BIMI Record: Found\n"
     fi
     space
 }
@@ -394,16 +385,13 @@ check_smtp_banner() {
     for mx in $mx_hosts; do
         if [[ "$mx" == *"google.com." ]]; then
             echo "$mx is managed by GOOGLES. Skipping SMTP banner retrieval."
-            summary+="SMTP Banner for $mx: Skipped (Google server)\n"
             continue
         fi
         banner=$(timeout 5 bash -c "exec 3<>/dev/tcp/$mx/25; echo -e 'QUIT\r\n' >&3; cat <&3 | head -n 1")
         if [ -n "$banner" ]; then
             echo "SMTP banner for $mx: $banner"
-            summary+="SMTP Banner for $mx: Retrieved\n"
         else
             echo "Unable to retrieve SMTP banner from $mx."
-            summary+="SMTP Banner for $mx: Not retrieved\n"
         fi
     done
     space
@@ -415,16 +403,13 @@ check_open_relay() {
     for mx in $mx_hosts; do
         if [[ "$mx" == *"google.com." ]]; then
             echo "$mx is managed by GOOGLE. Skipping open relay test."
-            summary+="$mx: Open relay test skipped (Google server)\n"
             continue
         fi
         response=$(timeout 5 bash -c "exec 3<>/dev/tcp/$mx/25; echo -e 'HELO test.com\r\nMAIL FROM:<test@test.com>\r\nRCPT TO:<nonexistent@$domain>\r\nQUIT\r\n' >&3; cat <&3")
         if echo "$response" | grep -qE "554|550|5[0-9][0-9]"; then
             echo "$mx is not an open relay."
-            summary+="$mx: Not an open relay\n"
         else
             echo "$mx may be an open relay."
-            summary+="$mx: Potential open relay\n"
         fi
     done
     space
@@ -435,11 +420,9 @@ check_caa() {
     caa_records=$(dig +short "$domain" CAA)
     if [ -z "$caa_records" ]; then
         echo "CAA records not found."
-        summary+="🛑 CAA Records: Not found\n"
     else
         echo "CAA records found:"
         echo "$caa_records"
-        summary+="✅ CAA Records: Found\n"
     fi
     space
 }
@@ -608,10 +591,8 @@ check_cdn() {
         [[ "$cdn" == *"cdn1.hkbn.net."* ]] ||
         [[ "$cdn" == *"cdn2.hkbn.net."* ]]; then
         echo "CDN detected: $cdn"
-        summary+="✅ CDN Detected: $cdn\n"
     else
         echo "No CDN detected or CDN not recognized."
-        summary+="🛑 CDN: Not detected\n"
     fi
     space
 }
