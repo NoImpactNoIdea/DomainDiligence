@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GOOGLE_SAFE_BROWSING_API_KEY="AIzaSyDwQtctMKUxmJoQItMO5OCKNY0a8_2p0V8"
+GOOGLE_SAFE_BROWSING_API_KEY=""
 
 missing_tools=()
 for tool in dig whois curl jq openssl; do
@@ -345,7 +345,6 @@ check_mta_sts() {
         echo "MTA-STS record not found."
     else
         echo "MTA-STS record found: $mta_sts_record"
-        summary+="MTA-STS Record: Found\n"
         policy_url="https://mta-sts.$domain/.well-known/mta-sts.txt"
         policy_response=$(curl -s -o /dev/null -w "%{http_code}" "$policy_url")
         if [ "$policy_response" -eq 200 ]; then
@@ -432,10 +431,8 @@ check_hsts() {
     response=$(curl -sI "https://$domain")
     if echo "$response" | grep -qi "Strict-Transport-Security"; then
         echo "HSTS is enabled."
-        summary+="✅ HSTS: Enabled\n"
     else
         echo "HSTS is not enabled."
-        summary+="🛑 HSTS: Not enabled\n"
     fi
     space
 }
@@ -507,24 +504,18 @@ check_http_headers() {
     headers=$(curl -sI "https://$domain")
     if echo "$headers" | grep -qi "Content-Security-Policy"; then
         echo "Content-Security-Policy header is set."
-        summary+="✅ Content-Security-Policy: Set\n"
     else
         echo "Content-Security-Policy header is missing."
-        summary+="🛑 Content-Security-Policy: Missing\n"
     fi
     if echo "$headers" | grep -qi "X-Frame-Options"; then
         echo "X-Frame-Options header is set."
-        summary+="✅ X-Frame-Options: Set\n"
     else
         echo "X-Frame-Options header is missing."
-        summary+="🛑 X-Frame-Options: Missing\n"
     fi
     if echo "$headers" | grep -qi "X-XSS-Protection"; then
         echo "X-XSS-Protection header is set."
-        summary+="✅ X-XSS-Protection: Set\n"
     else
         echo "X-XSS-Protection header is missing."
-        summary+="🛑 X-XSS-Protection: Missing\n"
     fi
     space
 }
